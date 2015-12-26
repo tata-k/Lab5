@@ -1,0 +1,51 @@
+library Project2;
+
+
+
+uses
+  Windows,
+  Messages;
+var
+  HookHandle: HHook=0; //¬ первой переменной будет хранитьс€ дескриптор созданной ловушке, в последствии он может быть использован дл€ уничтожени€ hook?а
+  Wnd: HWND; //¬тора€ переменна€ будет содержать указатель на поле поле ввода (Edit)
+
+{$R *.res}
+
+ function HookProc(Code: Integer; wParam: Word; lParam: Longint): longint; stdcall;  //передаем управление другим ловушкам
+begin
+CallNextHookEx(HookHandle, Code, wParam, lParam); //провер€ем, если пользователь нажал на левую кнопку и при этом удерживал кнопку Shift, то показываем, то что спр€тано под звЄздочками
+if Code=HC_ACTION then begin
+  if (TMsg(Pointer(lParam)^).message=WM_LBUTTONDOWN)
+       and ((TMsg(Pointer(lParam)^).wParam and MK_SHIFT)=MK_SHIFT) then begin
+    Wnd:=TMsg(Pointer(lParam)^).hwnd;
+    SendMessage(Wnd, EM_SETPASSWORDCHAR, 0, 0); //получаем указатель(Handle) объекта, который сгенерировал событие, а после посылаем ему сообщение о том, что надо отобразить спр€танные под звЄздочками символы
+    InvalidateRect(Wnd, nil, true); //обновл€ем нужное окно, дл€ того что бы сразу же увидеть результат
+    end;
+  end;
+end; 
+procedure SetHook(State: Boolean) export; stdcall;
+begin
+if State then
+  if HookHandle=0 then
+     HookHandle:=SetWindowsHookEx(WH_GETMESSAGE, @HookProc, HInstance, 0)
+else begin
+  UnhookWindowsHookEx(HookHandle);
+  HookHandle:=0;
+  end;
+end;
+exports SetHook index 1;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
